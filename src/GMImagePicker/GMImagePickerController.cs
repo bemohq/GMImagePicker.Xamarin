@@ -429,19 +429,18 @@ namespace GMImagePicker
 				((GMAlbumsViewController)_navigationController.TopViewController).SelectAllAlbumsCell ();
 			}
 
-			var picker = new UIImagePickerController () {
-				SourceType = UIImagePickerControllerSourceType.Camera,
-				MediaTypes = new string [] { UTType.Image },
+            var cameraCaptureMode = UIImagePickerControllerCameraCaptureMode.Photo | UIImagePickerControllerCameraCaptureMode.Video;
+            var picker = new UIImagePickerController()
+            {
+                SourceType = UIImagePickerControllerSourceType.Camera,
+                MediaTypes = new string[] { UTType.Movie, UTType.Image },
                 AllowsEditing = AllowsEditingCameraImages,
-				Delegate = new GMImagePickerDelegate (this),
-				ModalPresentationStyle = UIModalPresentationStyle.Popover
+                Delegate = new GMImagePickerDelegate(this),
+                CameraCaptureMode = cameraCaptureMode,
+                ModalPresentationStyle = UIModalPresentationStyle.OverFullScreen,
 			};
 
-			var popover = picker.PopoverPresentationController;
-			popover.PermittedArrowDirections = UIPopoverArrowDirection.Any;
-			popover.BarButtonItem = (UIBarButtonItem) sender;
-
-			PresentViewController (picker, false, null);
+            PresentViewController(picker, true, null);
 		}
 
 		private class GMImagePickerDelegate : UIImagePickerControllerDelegate
@@ -453,12 +452,13 @@ namespace GMImagePicker
 				_parent = parent;
 			}
 
-			public override async void FinishedPickingMedia (UIImagePickerController picker, NSDictionary info)
+			public override async void FinishedPickingMedia(UIImagePickerController picker, NSDictionary info)
 			{
 				await picker.PresentingViewController.DismissViewControllerAsync (true);
 
-				var mediaType = (NSString) info[UIImagePickerController.MediaType];
-				if (mediaType == UTType.Image) {
+                var mediaType = (NSString) info[UIImagePickerController.MediaType];
+				if (mediaType == UTType.Image) 
+                {
 					var image = (UIImage) (info[UIImagePickerController.EditedImage] ?? info[UIImagePickerController.OriginalImage]);
 					image.SaveToPhotosAlbum((img, error) => {
 						if (error != null) {
@@ -472,8 +472,32 @@ namespace GMImagePicker
 
 						// Note: The image view will auto refresh as the photo's are being observed in the other VCs
 					});
-				}
+				} 
+                else if (mediaType == UTType.Movie)
+                {
+                    ALAssetsLibrary library = new ALAssetsLibrary();
+                    var mediaURl = (NSUrl)info[UIImagePickerController.MediaURL];
+                    if (library.VideoAtPathIsIsCompatibleWithSavedPhotosAlbum(mediaURl)) {
+                        library.WriteVideoToSavedPhotosAlbum(mediaURl, (v, error) => {
+                            if (error != null)
+                            {
+                                var alert = UIAlertController.Create("Video Not Saved",
+                                                                     "Sorry, unable to save the new video!",
+                                                                     UIAlertControllerStyle.Alert);
 
+                                alert.AddAction(UIAlertAction.Create("OK", UIAlertActionStyle.Default, null));
+                                _parent.PresentViewController(alert, true, null);
+                            }
+                        });
+                    } else {
+                        var alert = UIAlertController.Create("Video Not Saved",
+                                     "Sorry, unable to save the new video!",
+                                     UIAlertControllerStyle.Alert);
+
+                        alert.AddAction(UIAlertAction.Create("OK", UIAlertActionStyle.Default, null));
+                        _parent.PresentViewController(alert, true, null);
+                    }
+                }
 			}
 
 			public override void Canceled (UIImagePickerController picker)
