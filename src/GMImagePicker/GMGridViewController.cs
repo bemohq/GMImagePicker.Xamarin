@@ -157,15 +157,11 @@ namespace GMImagePicker
 
 		private void FinishPickingAssets(object sender, EventArgs args)
 		{
-			// Explicitly unregister observer because we cannot predict when the GC cleans up
-			Unregister ();
 			_picker.FinishPickingAssets (sender, args);
 		}
 
 		private void Dismiss (object sender, EventArgs args)
 		{
-			// Explicitly unregister observer because we cannot predict when the GC cleans up
-			Unregister ();
 			_picker.Dismiss (sender, args);
 		}
 
@@ -181,9 +177,6 @@ namespace GMImagePicker
 
 			_imageManager = new PHCachingImageManager ();
 			ResetCachedAssets ();
-
-			// Register for changes
-			PHPhotoLibrary.SharedPhotoLibrary.RegisterChangeObserver (this);
 		}
 
 		public override void ViewWillAppear(bool animated)
@@ -203,6 +196,9 @@ namespace GMImagePicker
 				var item = CollectionView.NumberOfItemsInSection(0) - 1;
 				_newestItemPath = NSIndexPath.FromItemSection(item, 0);
 			}
+
+            // Register for changes
+            PHPhotoLibrary.SharedPhotoLibrary.RegisterChangeObserver(this);
 		}
 
 		NSIndexPath _newestItemPath;
@@ -222,11 +218,9 @@ namespace GMImagePicker
 
 		public override void ViewWillDisappear (bool animated)
 		{
-			if (!NavigationController.ViewControllers.Contains (this)) {
-				// Explicitly unregister observer because we cannot predict when the GC cleans up
-				Unregister ();
-			}
 			base.ViewWillDisappear (animated);
+
+            Unregister();
 		}
 
 		#region Asset Caching
@@ -429,7 +423,7 @@ namespace GMImagePicker
 		private void Unregister()
 		{
 			ResetCachedAssets ();
-			PHPhotoLibrary.SharedPhotoLibrary.UnregisterChangeObserver (this);
+            PHPhotoLibrary.SharedPhotoLibrary.UnregisterChangeObserver (this);
 		}
 
 		#endregion
