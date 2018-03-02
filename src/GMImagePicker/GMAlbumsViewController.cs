@@ -80,7 +80,9 @@ namespace GMImagePicker
 
 							if (changeDetails != null && changeDetails.InsertedObjects != null) {
 								foreach (var asset in changeDetails.InsertedObjects.OfType<PHAsset>()) {
-									_picker.SelectAsset (asset);
+                                    if (_picker.VerifyShouldSelectAsset(asset)) {
+                                        _picker.SelectAsset(asset);
+                                    }
 								}
 							}
 						}

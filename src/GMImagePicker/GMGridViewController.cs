@@ -374,7 +374,10 @@ namespace GMImagePicker
 								collectionView.InsertItems(GetIndexesWithSection(insertedIndexes, 0));
 								if (_picker.ShowCameraButton && _picker.AutoSelectCameraImages) {
 									foreach (var path in GetIndexesWithSection(insertedIndexes, 0)) {
-										collectionView.Source.ItemSelected(collectionView, path);
+                                        var asset = (PHAsset)AssetsFetchResults[path.Item];
+                                        if (_picker.VerifyShouldSelectAsset(asset)) {
+                                            collectionView.Source.ItemSelected(collectionView, path);
+                                        }
 									}
 								}
 							}
@@ -578,6 +581,7 @@ namespace GMImagePicker
 					return false;
 				} else {
 					return _parent._picker.VerifyShouldSelectAsset (asset);
+
 				}
 			}
 
